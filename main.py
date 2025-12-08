@@ -20,8 +20,7 @@ def main():
         scraper.parse_page(page)
         
 
-        print(json.dumps(scraper.data, indent=2))
-        
+
         browser.close()
 
 
