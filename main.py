@@ -1,11 +1,12 @@
-import json
 from playwright.sync_api import sync_playwright
+
+from scrapers.behance_scraper import BehanceScraper
 from scrapers.vimeo import vimeo
 
 
 def main():
 
-    scraper = vimeo(username="ma")
+    scraper = BehanceScraper(username="Fiodor")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
