@@ -1,18 +1,36 @@
 import json
 from playwright.sync_api import sync_playwright
-from scrapers.vimeo import vimeo
-
+from login_session.session_manager import  SessionManager
+from scrapers.instagram import instagram
 
 def main():
-
-    scraper = vimeo(username="ma")
+    scraper = instagram(username="babarazam")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
-        page.goto(scraper.url)
+
+        # Only run login/session if scraper needs login
+        if getattr(scraper, "requires_login", False):
+            session = SessionManager(f"{scraper.__class__.__name__}_session.json.gz")
+            session_loaded = session.load(page)
+
+            page.goto(scraper.url)
+
+            if not session_loaded:
+                print(">> Please login manually, then press ENTER...")
+                input()
+                session.save(page)
+            else:
+                session.apply_storage(page)
+        else:
+            # Normal behaviour (like Vimeo)
+            page.goto(scraper.url)
+
+
         scraper.parse_page(page)
         browser.close()
+
 
 if __name__ == "__main__":
     main()
