@@ -4,6 +4,8 @@ from scrapers.base_scraper import BaseScraper
 
 class vimeo(BaseScraper):
 
+    requires_login = False
+
     def __init__(self, username: str):
         super().__init__()
         self._username = username
