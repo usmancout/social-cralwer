@@ -2,6 +2,7 @@
 import time
 from playwright.sync_api import Page
 from scrapers.base_scraper import BaseScraper
+from models import social_model
 
 
 class BehanceScraper(BaseScraper):
@@ -64,12 +65,16 @@ class BehanceScraper(BaseScraper):
 
         final_list = list(collected_followers)[:max_followers]
 
-        self.data.append({
-            "platform": "behance",
-            "username": self._username,
-            "url": self.url,
-            "followers": final_list,
-            "follower_count": len(final_list)
-        })
+        card = social_model(
+            m_weblink=[self.url],
+            m_content=f"Followers of {self._username}: {', '.join(final_list)}",
+            m_content_type=["behance_followers"],
+            m_network="clearnet",
+            m_platform="behance",
+
+            m_commenters=final_list
+        )
+        print(card)
+        self.data.append(card.model_dump())
 
         print(f"[{self.name}] SUCCESS → Saved {len(final_list)} followers of @{self._username}")

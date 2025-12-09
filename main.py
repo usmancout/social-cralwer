@@ -1,10 +1,12 @@
-import json
 from playwright.sync_api import sync_playwright
-from login_session.session_manager import  SessionManager
-from scrapers.instagram import instagram
+
+from scrapers.behance_scraper import BehanceScraper
+from scrapers.vimeo import vimeo
+
 
 def main():
-    scraper = instagram(username="babarazam")
+
+    scraper = BehanceScraper(username="Fiodor")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
