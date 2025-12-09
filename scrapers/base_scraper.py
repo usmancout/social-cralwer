@@ -12,6 +12,9 @@ class BaseScraper(ABC):
     
     def __init__(self):
         self.data = []
+
+    # NEW → default: no login required
+    requires_login: bool = False
     
     @property
     @abstractmethod
