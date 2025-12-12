@@ -17,11 +17,21 @@ class BaseScraper(ABC):
     requires_login: bool = False
     
     @property
-    @abstractmethod
-    def url(self) -> str:
-        """Return the URL to scrape"""
+    def follower_url(self) -> str:
+        return""
         pass
-    
+
+    @property
+    def following_url(self) -> str:
+        return""
+        pass
+
+    @property
+    @abstractmethod
+    def base_url(self) -> str:
+        """Return the scraper name"""
+        pass
+
     @property
     @abstractmethod
     def name(self) -> str:
