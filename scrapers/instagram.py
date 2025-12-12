@@ -1,5 +1,7 @@
 from playwright.sync_api import Page
 from scrapers.base_scraper import BaseScraper
+from models import social_model
+from cross_platform_mapping import cross_platform_mapper
 
 
 class instagram(BaseScraper):
@@ -76,4 +78,24 @@ class instagram(BaseScraper):
         loc = page.locator("div[role='dialog'] a.notranslate")
         followers_user = loc.all_inner_texts()
         print(len(followers_user), followers_user)
+
+        # Build model and send to cross-platform mapper
+        mutual = list(set(followers_user) & set(following_user))
+        
+        card = social_model(
+            m_weblink=[f"{self.url}/followers/", f"{self.url}/following/"],
+            m_content=f"Followers: {followers_user}\nFollowing: {following_user}\nMutual: {mutual}",
+            m_content_type=["instagram_followers", "instagram_following", "instagram_mutual"],
+            m_network="clearnet",
+            m_platform="instagram",
+            m_followers=followers_user,
+            m_following=following_user,
+            m_mutual_usernames=mutual
+        )
+
+        print(card)
+        self.data.append(card.model_dump())
+        
+        # Send card to cross-platform mapper
+        cross_platform_mapper.add_card(card)
 
