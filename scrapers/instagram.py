@@ -83,10 +83,15 @@ class instagram(BaseScraper):
         mutual = list(set(followers_user) & set(following_user))
         
         card = social_model(
+            m_username=username,
+            m_real_name=real_name,
+            m_bio=bio_text,
+            m_total_posts=total_posts,
+            m_total_followers=followers,
+            m_total_following=following,
             m_weblink=[f"{self.url}/followers/", f"{self.url}/following/"],
             m_content=f"Followers: {followers_user}\nFollowing: {following_user}\nMutual: {mutual}",
             m_content_type=["instagram_followers", "instagram_following", "instagram_mutual"],
-            m_network="clearnet",
             m_platform="instagram",
             m_followers=followers_user,
             m_following=following_user,
