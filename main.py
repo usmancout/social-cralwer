@@ -1,4 +1,6 @@
 from playwright.sync_api import sync_playwright
+
+from cross_platform_mapping import cross_platform_mapper
 from login_session.session_manager import SessionManager
 from scrapers.behance_scraper import BehanceScraper
 from scrapers.instagram import instagram
@@ -28,9 +30,8 @@ def run_scraper(scraper, page):
 
 def main():
     scrapers = [
-        BehanceScraper(username="Fiodor"),
         FacebookScraper(username="qasimbhatti007"),
-        vimeo(username="ma")
+        instagram(username="ibrahim_sayys")
     ]
 
     with sync_playwright() as p:
@@ -42,6 +43,8 @@ def main():
 
         browser.close()
 
+        cross_platform_mapper.print_all_cards()
+        cross_platform_mapper.compare_following_across_platforms()
 
 if __name__ == "__main__":
     main()
