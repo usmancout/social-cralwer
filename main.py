@@ -29,7 +29,7 @@ def run_scraper(scraper, page):
 def main():
     scrapers = [
         BehanceScraper(username="Fiodor"),
-        FacebookScraper(username="qasimbhatti007"),
+        FacebookScraper(username="profile.php?id=100081288807680&sk"),
         vimeo(username="ma")
     ]
 
