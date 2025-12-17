@@ -9,7 +9,15 @@ class social_model(BaseModel):
     Used to standardize data structure across different social media platforms.
     """
     m_weblink: List[str] = Field(default_factory=list)
-    m_network: str
+    m_username: str =None
+    m_network: str =None
+    m_real_name: str = None
+    m_total_posts: str = None
+    m_followers : List[str] = None
+    m_following : List[str] = None
+    m_total_followers : str = None
+    m_total_following : str = None
+    m_bio : str = None
     m_content: Optional[str] = None
     m_content_type: List[str] = Field(default_factory=list)
     m_channel_url: Optional[str] = None
@@ -25,8 +33,3 @@ class social_model(BaseModel):
     m_retweets: Optional[str] = None
     m_commenters: List[str] = Field(default_factory=list)
     m_mutual_usernames: List[str] = Field(default_factory=list)
-    m_followers: List[str] = Field(default_factory=list)
-    m_following: List[str] = Field(default_factory=list)
-
-
-
