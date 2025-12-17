@@ -17,7 +17,7 @@ class vimeo(BaseScraper):
         return f"https://vimeo.com/{self._username}"
 
     @property
-    def url(self) -> str:
+    def seed_url(self) -> str:
         return f"https://vimeo.com/{self._username}"
 
     @property

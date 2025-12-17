@@ -4,7 +4,6 @@ from scrapers.base_scraper import BaseScraper
 from models import social_model
 from cross_platform_mapping import cross_platform_mapper
 
-
 class BehanceScraper(BaseScraper):
 
     def __init__(self, username: str):
@@ -20,7 +19,7 @@ class BehanceScraper(BaseScraper):
         return f"https://www.behance.net/{self._username}/followers"
 
     @property
-    def following_url(self) -> str:
+    def seed_url(self) -> str:
         return f"https://www.behance.net/{self._username}/following"
 
     @property
@@ -84,7 +83,7 @@ class BehanceScraper(BaseScraper):
         # Collect following
         following = self._collect_names(
             page,
-            url=self.following_url,
+            url=self.seed_url,
             label="following"
         )
 
@@ -95,7 +94,7 @@ class BehanceScraper(BaseScraper):
 
         # Build model
         card = social_model(
-            m_weblink=[self.follower_url, self.following_url],
+            m_weblink=[self.follower_url, self.seed_url],
             m_content=(
                 f"Followers of {self._username}: {', '.join(followers)} | "
                 f"Following: {', '.join(following)} | "
@@ -107,7 +106,7 @@ class BehanceScraper(BaseScraper):
 
             m_followers=followers,
             m_following=following,
-            m_mutual_usernames=mutual_usernames  # <-- added
+            m_mutual_usernames=mutual_usernames
         )
 
         print(card)
