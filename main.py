@@ -30,8 +30,9 @@ def run_scraper(scraper, page):
 
 def main():
     scrapers = [
-        FacebookScraper(username="qasimbhatti007"),
-        instagram(username="ibrahim_sayys")
+        vimeo(username="ma"),
+        FacebookScraper(username="profile.php?id=100081288807680&sk"),
+        instagram(username="nazarali870")
     ]
 
     with sync_playwright() as p:
@@ -45,6 +46,7 @@ def main():
 
         cross_platform_mapper.print_all_cards()
         cross_platform_mapper.compare_following_across_platforms()
+        cross_platform_mapper.group_following_across_all_platforms()
 
 if __name__ == "__main__":
     main()
