@@ -13,7 +13,7 @@ class instagram(BaseScraper):
         self._username = username
 
     @property
-    def url(self) -> str:
+    def base_url(self) -> str:
         return f"https://www.instagram.com/{self._username}"
 
     @property
@@ -49,34 +49,64 @@ class instagram(BaseScraper):
         print("bio:", bio_text)
 
         page.click("a[href$='/following/']")
+        MAX_FOLLOWING = 100  # 👈 set limit
+
         page.wait_for_selector("div[role='dialog'] a.notranslate")
 
         loc = page.locator("div[role='dialog'] a.notranslate").first
         box = loc.bounding_box()
         page.mouse.move(box["x"] + box["width"] + 20, box["y"] + 10)
 
-        for _ in range(5):
-            page.mouse.wheel(0, 1500)
-            page.wait_for_timeout(2000)
+        following_user = set()
+        prev_count = 0
 
-        loc = page.locator("div[role='dialog'] a.notranslate")
-        following_user = loc.all_inner_texts()
+        while len(following_user) < MAX_FOLLOWING:
+            page.mouse.wheel(0, 1500)
+            page.wait_for_timeout(4000)
+
+            loc = page.locator("div[role='dialog'] a.notranslate")
+            current = loc.all_inner_texts()
+            following_user.update(current)
+
+            # Stop if no new usernames load
+            if len(following_user) == prev_count:
+                break
+
+            prev_count = len(following_user)
+
+        following_user = list(following_user)[:MAX_FOLLOWING]
+
         print(len(following_user), following_user)
 
-        page.goto(self.url)
+        page.goto(self.base_url)
         page.click("a[href$='/followers/']")
+        max_followers = 100  # 👈 set your limit here
+
         page.wait_for_selector("div[role='dialog'] a.notranslate")
 
         loc = page.locator("div[role='dialog'] a.notranslate").first
         box = loc.bounding_box()
         page.mouse.move(box["x"] + box["width"] + 20, box["y"] + 10)
 
-        for _ in range(5):
-            page.mouse.wheel(0, 1500)
-            page.wait_for_timeout(2000)
+        followers_user = set()
+        prev_count = 0
 
-        loc = page.locator("div[role='dialog'] a.notranslate")
-        followers_user = loc.all_inner_texts()
+        while len(followers_user) < max_followers:
+            page.mouse.wheel(0, 1500)
+            page.wait_for_timeout(4000)
+
+            loc = page.locator("div[role='dialog'] a.notranslate")
+            current = loc.all_inner_texts()
+            followers_user.update(current)
+
+            # Stop if no new users are loading
+            if len(followers_user) == prev_count:
+                break
+
+            prev_count = len(followers_user)
+
+        followers_user = list(followers_user)[:max_followers]
+
         print(len(followers_user), followers_user)
 
         # Build model and send to cross-platform mapper
@@ -89,7 +119,7 @@ class instagram(BaseScraper):
             m_total_posts=total_posts,
             m_total_followers=followers,
             m_total_following=following,
-            m_weblink=[f"{self.url}/followers/", f"{self.url}/following/"],
+            m_weblink=[f"{self.base_url}/followers/", f"{self.base_url}/following/"],
             m_content=f"Followers: {followers_user}\nFollowing: {following_user}\nMutual: {mutual}",
             m_content_type=["instagram_followers", "instagram_following", "instagram_mutual"],
             m_platform="instagram",
