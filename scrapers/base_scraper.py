@@ -16,19 +16,16 @@ class BaseScraper(ABC):
     # NEW → default: no login required
     requires_login: bool = False
     
-    @property
-    def follower_url(self) -> str:
-        return""
-        pass
-
-    @property
-    def following_url(self) -> str:
-        return""
-        pass
 
     @property
     @abstractmethod
     def base_url(self) -> str:
+        """Return the scraper name"""
+        pass
+
+    @property
+    @abstractmethod
+    def seed_url(self) -> str:
         """Return the scraper name"""
         pass
 
