@@ -3,9 +3,10 @@ Cross-Platform Mapping Module
 Collects and stores card instances from multiple scrapers,
 then prints all collected cards at the end.
 """
-from rapidfuzz import fuzz, process
-from typing import List
-from difflib import SequenceMatcher
+
+from typing import List, Tuple
+from rapidfuzz import fuzz
+
 from models import social_model
 
 
@@ -73,34 +74,26 @@ class CrossPlatformMapper:
         print("[CrossPlatformMapper] All cards cleared.")
 
     # -----------------------------------------------------------------
-    # 🔥 NEW FEATURE: Cross-Platform Following Username Comparison
+    # Cross-Platform Following Username Comparison (Pairwise)
     # -----------------------------------------------------------------
-
-
-    def compare_following_across_platforms(self, threshold: float = 70):
+    def compare_following_across_platforms(self, threshold: int = 70) -> None:
         """
-        Compares following lists of all platforms using rapidfuzz:
-          - exact matches
-          - fuzzy username matches (based on similarity score)
-          - unique usernames on each platform
-
-        Args:
-            threshold: minimum similarity score (0-100) to consider a match
+        Performs pairwise comparison of 'following' lists between all platforms.
+        Uses RapidFuzz with extractOne for clean, type-safe fuzzy matching.
         """
-
         print("\n" + "=" * 60)
-        print("CROSS-PLATFORM FOLLOWING USERNAME COMPARISON (RapidFuzz)")
+        print("CROSS-PLATFORM FOLLOWING COMPARISON (PAIRWISE)")
         print("=" * 60)
 
-        # Extract only cards with following lists
+        # Collect unique following lists per platform
         platform_following = {
-            card.m_platform: card.m_following
+            card.m_platform: list(set(card.m_following))
             for card in self._cards
             if card.m_following
         }
 
         if len(platform_following) < 2:
-            print("Not enough platforms with following lists.")
+            print("Not enough platforms with following data.")
             return
 
         platforms = list(platform_following.keys())
@@ -111,31 +104,85 @@ class CrossPlatformMapper:
                 list1 = platform_following[p1]
                 list2 = platform_following[p2]
 
-                print(f"\n>>> Comparing: {p1} vs {p2}")
+                print(f"\n>>> {p1}  VS  {p2}")
 
                 # Exact matches
-                exact = set(list1) & set(list2)
-                print(f"Exact Matches ({len(exact)}): {list(exact)}")
+                exact = sorted(set(list1) & set(list2))
+                print(f"Exact Matches ({len(exact)}): {exact}")
 
-                # Fuzzy matches using rapidfuzz process.extract
-                fuzzy_matches = []
+                # Similar matches (case-insensitive, partial)
+                similar: List[Tuple[str, str]] = []
                 for u1 in list1:
-                    matches = (process.extract(u1,list2,scorer=fuzz.ratio,score_cutoff=threshold))
+                    for u2 in list2:
+                        # Skip if already an exact match
+                        if u1 == u2:
+                            continue
+                        # Check similarity using direct ratio comparison
+                        score = fuzz.ratio(u1.lower(), u2.lower())
+                        if score >= threshold:
+                            similar.append((u1, u2))
 
-                    for match_name, score, _ in matches:
-                        if u1 != match_name:
-                            fuzzy_matches.append((u1, match_name, round(score, 2)))
+                print(f"Similar Matches ({len(similar)}): {similar}")
 
-                print(f"Fuzzy Matches ({len(fuzzy_matches)}): {fuzzy_matches}")
+                # Unique to each platform
+                only_p1 = sorted(set(list1) - set(list2))
+                only_p2 = sorted(set(list2) - set(list1))
+                print(f"Only on {p1}: {only_p1}")
+                print(f"Only on {p2}: {only_p2}")
 
-                # Unique users
-                unique_p1 = set(list1) - set(list2)
-                unique_p2 = set(list2) - set(list1)
-                print(f"Only on {p1}: {list(unique_p1)}")
-                print(f"Only on {p2}: {list(unique_p2)}")
+        print("\n" + "=" * 60)
 
-        print("\n" + "=" * 60 + "\n")
+    # -----------------------------------------------------------------
+    # Global multi-platform identity grouping
+    # -----------------------------------------------------------------
+    def group_following_across_all_platforms(self, threshold: int = 70) -> None:
+        """
+        Groups similar usernames across ALL platforms into identity clusters.
+        Uses simple pairwise fuzz.ratio (direct and type-safe).
+        """
+        print("\n" + "=" * 60)
+        print("GLOBAL USERNAME IDENTITY GROUPING")
+        print("=" * 60)
+
+        # Collect all (platform, username) pairs
+        users: List[Tuple[str, str]] = []
+        for card in self._cards:
+            if card.m_following:
+                for username in card.m_following:
+                    users.append((card.m_platform, username))
+
+        if not users:
+            print("No following data available.")
+            print("=" * 60)
+            return
+
+        # Greedy clustering: group usernames with similarity >= threshold
+        groups: List[List[Tuple[str, str]]] = []
+
+        for platform, username in users:
+            matched = False
+            for group in groups:
+                # Check against any existing member in the group
+                if any(fuzz.ratio(username, existing_username) >= threshold
+                       for _, existing_username in group):
+                    group.append((platform, username))
+                    matched = True
+                    break
+            if not matched:
+                groups.append([(platform, username)])
+
+        # Print only groups with cross-platform matches
+        meaningful_groups = [g for g in groups if len(g) > 1]
+        if not meaningful_groups:
+            print("No cross-platform identities found above threshold.")
+        else:
+            for idx, group in enumerate(meaningful_groups, 1):
+                print(f"\nIdentity Group {idx}:")
+                for platform, username in sorted(group):
+                    print(f"  {platform}: {username}")
+
+        print("\n" + "=" * 60)
 
 
-# Global instance for easy access
+# Global singleton instance
 cross_platform_mapper = CrossPlatformMapper()
