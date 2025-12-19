@@ -4,7 +4,7 @@ Collects and stores card instances from multiple scrapers,
 then prints all collected cards at the end.
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Set
 from rapidfuzz import fuzz
 
 from models import social_model
@@ -31,9 +31,7 @@ class CrossPlatformMapper:
         return self._cards
 
     def print_all_cards(self) -> None:
-        print("\n" + "=" * 60)
         print("CROSS-PLATFORM MAPPING - ALL COLLECTED CARDS")
-        print("=" * 60)
 
         if not self._cards:
             print("No cards collected.")
@@ -64,10 +62,8 @@ class CrossPlatformMapper:
             if card.m_views:
                 print(f"Views: {card.m_views}")
 
-            print("-" * 40)
 
         print(f"\nTotal cards collected: {len(self._cards)}")
-        print("=" * 60 + "\n")
 
     def clear_cards(self) -> None:
         self._cards = []
@@ -81,9 +77,7 @@ class CrossPlatformMapper:
         Performs pairwise comparison of 'following' lists between all platforms.
         Uses RapidFuzz with extractOne for clean, type-safe fuzzy matching.
         """
-        print("\n" + "=" * 60)
         print("CROSS-PLATFORM FOLLOWING COMPARISON (PAIRWISE)")
-        print("=" * 60)
 
         # Collect unique following lists per platform
         platform_following = {
@@ -133,7 +127,6 @@ class CrossPlatformMapper:
                 print(f"Only on {p1}: {only_p1}")
                 print(f"Only on {p2}: {only_p2}")
 
-        print("\n" + "=" * 60)
 
     # -----------------------------------------------------------------
     # Global multi-platform identity grouping
@@ -143,9 +136,7 @@ class CrossPlatformMapper:
         Groups similar usernames across ALL platforms into identity clusters.
         Uses simple pairwise fuzz.ratio (direct and type-safe).
         """
-        print("\n" + "=" * 60)
         print("GLOBAL USERNAME IDENTITY GROUPING")
-        print("=" * 60)
 
         # Collect all (platform, username) pairs
         users: List[Tuple[str, str]] = []
@@ -189,6 +180,187 @@ class CrossPlatformMapper:
                     ]
                     confidence = max(scores) if scores else 100
                     print(f"  {platform}: {username} ({confidence}%)")
+
+        print("\n" + "=" * 60)
+
+    # -----------------------------------------------------------------
+    # NEW FEATURE: Cross-Platform Influence & Network Intelligence
+    # -----------------------------------------------------------------
+    def analyze_cross_platform_influence(self, threshold: int = 70) -> None:
+        """
+        Analyzes influence and network intelligence across platforms.
+
+        Features:
+        1. Identifies users appearing in multiple network types (followers/following/friends)
+        2. Calculates influence scores based on:
+           - Cross-platform presence
+           - Network position (follower count)
+           - Connection reciprocity
+        3. Detects key connectors bridging different platforms
+        """
+        print("CROSS-PLATFORM INFLUENCE & NETWORK INTELLIGENCE")
+
+        # Step 1: Build unified network graph
+        user_profiles: Dict[str, Dict] = {}  # Normalized username -> profile data
+
+        for card in self._cards:
+            platform = card.m_platform
+
+            # Collect all usernames from different connection types
+            all_connections = []
+
+            # Add followers with type annotation
+            if card.m_followers:
+                for user in card.m_followers:
+                    all_connections.append((user, 'follower', platform))
+
+            # Add following with type annotation
+            if card.m_following:
+                for user in card.m_following:
+                    all_connections.append((user, 'following', platform))
+
+            # Add mutual connections (bidirectional relationships)
+            if card.m_mutual_usernames:
+                for user in card.m_mutual_usernames:
+                    all_connections.append((user, 'mutual', platform))
+
+            # Process each connection
+            for username, conn_type, plat in all_connections:
+                # Normalize username for matching
+                norm_username = username.lower().strip()
+
+                # Find or create profile entry
+                matched_key = None
+                for existing_key in user_profiles.keys():
+                    if fuzz.ratio(norm_username, existing_key) >= threshold:
+                        matched_key = existing_key
+                        break
+
+                if not matched_key:
+                    matched_key = norm_username
+                    user_profiles[matched_key] = {
+                        'original_names': set(),
+                        'platforms': set(),
+                        'connection_types': set(),
+                        'follower_count': 0,
+                        'following_count': 0,
+                        'mutual_count': 0,
+                        'platform_details': {}
+                    }
+
+                # Update profile
+                profile = user_profiles[matched_key]
+                profile['original_names'].add(username)
+                profile['platforms'].add(plat)
+                profile['connection_types'].add(conn_type)
+
+                # Count connection types
+                if conn_type == 'follower':
+                    profile['follower_count'] += 1
+                elif conn_type == 'following':
+                    profile['following_count'] += 1
+                elif conn_type == 'mutual':
+                    profile['mutual_count'] += 1
+
+                # Store platform-specific details
+                if plat not in profile['platform_details']:
+                    profile['platform_details'][plat] = []
+                profile['platform_details'][plat].append(conn_type)
+
+        if not user_profiles:
+            print("No user data available for analysis.")
+            print("=" * 60)
+            return
+
+        # Step 2: Calculate influence scores
+        scored_users = []
+
+        for username, profile in user_profiles.items():
+            # Base score components
+            platform_diversity = len(profile['platforms'])  # More platforms = higher influence
+            connection_diversity = len(profile['connection_types'])  # Multiple connection types = key player
+
+            # Network position score
+            network_score = (
+                profile['follower_count'] * 1.5 +  # Being followed is valuable
+                profile['mutual_count'] * 2.0 +     # Mutual connections are strongest
+                profile['following_count'] * 0.5    # Following others is less indicative
+            )
+
+            # Calculate final influence score
+            influence_score = (
+                platform_diversity * 10 +      # Cross-platform presence
+                connection_diversity * 5 +     # Network diversity
+                network_score                  # Network strength
+            )
+
+            scored_users.append({
+                'username': username,
+                'profile': profile,
+                'score': influence_score
+            })
+
+        # Step 3: Sort and display results
+        scored_users.sort(key=lambda x: x['score'], reverse=True)
+
+        # Display top influencers
+        print("\n>>> TOP CROSS-PLATFORM INFLUENCERS")
+        print("-" * 60)
+
+        top_n = min(10, len(scored_users))
+        for i, user_data in enumerate(scored_users[:top_n], 1):
+            profile = user_data['profile']
+            print(f"\n{i}. Username Variations: {sorted(profile['original_names'])}")
+            print(f"   Influence Score: {user_data['score']:.1f}")
+            print(f"   Platforms: {sorted(profile['platforms'])}")
+            print(f"   Connection Types: {sorted(profile['connection_types'])}")
+            print(f"   Network Stats: {profile['follower_count']} followers, "
+                  f"{profile['following_count']} following, "
+                  f"{profile['mutual_count']} mutual")
+
+            # Show platform-specific presence
+            print(f"   Platform Breakdown:")
+            for plat, types in sorted(profile['platform_details'].items()):
+                print(f"      {plat}: {', '.join(sorted(set(types)))}")
+
+        # Display cross-platform bridge users
+        print("\n\n>>> CROSS-PLATFORM BRIDGE USERS (Multi-Platform Connectors)")
+        print("-" * 60)
+
+        bridge_users = [u for u in scored_users if len(u['profile']['platforms']) >= 2]
+
+        if not bridge_users:
+            print("No users found on multiple platforms.")
+        else:
+            for user_data in bridge_users[:15]:  # Show top 15 bridge users
+                profile = user_data['profile']
+                platforms_str = " ↔ ".join(sorted(profile['platforms']))
+                names_str = " / ".join(sorted(profile['original_names']))
+                print(f"  • {names_str}")
+                print(f"    Bridges: {platforms_str}")
+                print(f"    Connection Types: {', '.join(sorted(profile['connection_types']))}")
+
+        # Display network statistics
+        print("\n\n>>> NETWORK STATISTICS")
+        print("-" * 60)
+
+        total_users = len(user_profiles)
+        multi_platform = len([u for u in user_profiles.values() if len(u['platforms']) > 1])
+        avg_platforms = sum(len(u['platforms']) for u in user_profiles.values()) / total_users
+
+        print(f"Total Unique Users: {total_users}")
+        print(f"Multi-Platform Users: {multi_platform} ({multi_platform/total_users*100:.1f}%)")
+        print(f"Average Platforms per User: {avg_platforms:.2f}")
+
+        # Connection type distribution
+        conn_type_dist = {}
+        for profile in user_profiles.values():
+            for conn_type in profile['connection_types']:
+                conn_type_dist[conn_type] = conn_type_dist.get(conn_type, 0) + 1
+
+        print(f"\nConnection Type Distribution:")
+        for conn_type, count in sorted(conn_type_dist.items(), key=lambda x: x[1], reverse=True):
+            print(f"  {conn_type}: {count} users")
 
         print("\n" + "=" * 60)
 

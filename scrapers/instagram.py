@@ -14,6 +14,10 @@ class instagram(BaseScraper):
 
     @property
     def base_url(self) -> str:
+        return f"https://www.instagram.com"
+
+    @property
+    def seed_url(self) -> str:
         return f"https://www.instagram.com/{self._username}"
 
     @property
@@ -78,7 +82,7 @@ class instagram(BaseScraper):
 
         print(len(following_user), following_user)
 
-        page.goto(self.base_url)
+        page.goto(self.seed_url)
         page.click("a[href$='/followers/']")
         max_followers = 100  # 👈 set your limit here
 
@@ -119,7 +123,7 @@ class instagram(BaseScraper):
             m_total_posts=total_posts,
             m_total_followers=followers,
             m_total_following=following,
-            m_weblink=[f"{self.base_url}/followers/", f"{self.base_url}/following/"],
+            m_weblink=[f"{self.seed_url}/followers/", f"{self.seed_url}/following/"],
             m_content=f"Followers: {followers_user}\nFollowing: {following_user}\nMutual: {mutual}",
             m_content_type=["instagram_followers", "instagram_following", "instagram_mutual"],
             m_platform="instagram",

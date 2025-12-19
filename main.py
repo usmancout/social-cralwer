@@ -43,7 +43,6 @@ def main():
 
         browser.close()
 
-        cross_platform_mapper.print_all_cards()
         cross_platform_mapper.compare_following_across_platforms()
         cross_platform_mapper.group_following_across_all_platforms()
 
