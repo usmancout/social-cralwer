@@ -23,15 +23,16 @@ def run_scraper(scraper, page):
         else:
             session.apply_storage(page)
 
-    page.goto(scraper.base_url)
+    page.goto(scraper.seed_url)
     scraper.parse_page(page)
     print(f">> Finished: {scraper.__class__.__name__}")
 
 
 def main():
     scrapers = [
-        FacebookScraper(username="qasimbhatti007"),
-        instagram(username="ibrahim_sayys")
+        BehanceScraper(username="grapheine"),
+        FacebookScraper(username="profile.php?id=100081288807680&sk"),
+        instagram(username="nazarali870")
     ]
 
     with sync_playwright() as p:
@@ -43,8 +44,10 @@ def main():
 
         browser.close()
 
-        cross_platform_mapper.print_all_cards()
         cross_platform_mapper.compare_following_across_platforms()
+        cross_platform_mapper.group_following_across_all_platforms()
+        cross_platform_mapper.analyze_cross_platform_influence()
+
 
 if __name__ == "__main__":
     main()
