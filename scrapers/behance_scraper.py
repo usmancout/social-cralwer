@@ -4,6 +4,7 @@ from scrapers.base_scraper import BaseScraper
 from models import social_model
 from cross_platform_mapping import cross_platform_mapper
 
+
 class BehanceScraper(BaseScraper):
 
     def __init__(self, username: str):
@@ -19,8 +20,12 @@ class BehanceScraper(BaseScraper):
         return f"https://www.behance.net/{self._username}/followers"
 
     @property
-    def seed_url(self) -> str:
+    def following_url(self) -> str:
         return f"https://www.behance.net/{self._username}/following"
+
+    @property
+    def seed_url(self) -> str:
+        return f"https://www.behance.net"
 
     @property
     def name(self) -> str:
@@ -29,8 +34,9 @@ class BehanceScraper(BaseScraper):
     def _collect_names(self, page: Page, url: str, label: str, max_items=10):
         """
         Shared logic for collecting followers/following list.
+        Strictly enforces max_items limit.
         """
-        page.goto(url, wait_until="networkidle", timeout=90000)
+        page.goto(url)
         page.wait_for_selector('div.ScrollableModal-content-SvL', timeout=30000)
 
         collected = set()
@@ -49,18 +55,23 @@ class BehanceScraper(BaseScraper):
 
             added = 0
             for n in names:
+                # Stop immediately when we reach max_items
+                if len(collected) >= max_items:
+                    break
+
                 if n not in collected:
                     collected.add(n)
                     added += 1
                     print(f"  → + {n} ({len(collected)}/{max_items})")
 
+            # Break if we've reached the limit
+            if len(collected) >= max_items:
+                break
+
             if added == 0:
                 no_progress_rounds += 1
             else:
                 no_progress_rounds = 0
-
-            if len(collected) >= max_items:
-                break
 
             page.evaluate('''
                 const modal = document.querySelector('div.ScrollableModal-scrollableTarget-IZX');
@@ -69,7 +80,10 @@ class BehanceScraper(BaseScraper):
 
             time.sleep(2.5)
 
-        return list(collected)[:max_items]
+        # Ensure we return exactly max_items or less
+        result = list(collected)[:max_items]
+        print(f"[{self.name}] Collected {len(result)} {label}")
+        return result
 
     def parse_page(self, page: Page):
 
@@ -77,14 +91,16 @@ class BehanceScraper(BaseScraper):
         followers = self._collect_names(
             page,
             url=self.follower_url,
-            label="followers"
+            label="followers",
+            max_items=10
         )
 
         # Collect following
         following = self._collect_names(
             page,
-            url=self.seed_url,
-            label="following"
+            url=self.following_url,
+            label="following",
+            max_items=10
         )
 
         # Find mutual usernames
@@ -94,7 +110,7 @@ class BehanceScraper(BaseScraper):
 
         # Build model
         card = social_model(
-            m_weblink=[self.follower_url, self.seed_url],
+            m_weblink=[self.follower_url, self.following_url],
             m_content=(
                 f"Followers of {self._username}: {', '.join(followers)} | "
                 f"Following: {', '.join(following)} | "
@@ -111,7 +127,6 @@ class BehanceScraper(BaseScraper):
 
         print(card)
         self.data.append(card.model_dump())
-        
+
         # Send card to cross-platform mapper
         cross_platform_mapper.add_card(card)
-
