@@ -105,7 +105,7 @@ class CrossPlatformMapper:
                 print(f"Exact Matches ({len(exact)}): {exact}")
 
                 # Similar matches (case-insensitive, partial)
-                similar: List[Tuple[str, str]] = []
+                similar: List[Tuple[str, str,float]] = []
                 for u1 in list1:
                     for u2 in list2:
                         # Skip if already an exact match
@@ -114,9 +114,12 @@ class CrossPlatformMapper:
                         # Check similarity using direct ratio comparison
                         score = fuzz.ratio(u1.lower(), u2.lower())
                         if score >= threshold:
-                            similar.append((u1, u2))
+                            similar.append((u1, u2,score))
 
-                print(f"Similar Matches ({len(similar)}): {similar}")
+                print(
+                    f"Similar Matches ({len(similar)}): "
+                    f"{[(u1, u2, f'{s}%') for u1, u2, s in similar]}"
+                )
 
                 # Unique to each platform
                 only_p1 = sorted(set(list1) - set(list2))
@@ -170,7 +173,13 @@ class CrossPlatformMapper:
             for idx, group in enumerate(meaningful_groups, 1):
                 print(f"\nIdentity Group {idx}:")
                 for platform, username in sorted(group):
-                    print(f"  {platform}: {username}")
+                    scores = [
+                        fuzz.ratio(username, other)
+                        for _, other in group
+                        if other != username
+                    ]
+                    confidence = max(scores) if scores else 100
+                    print(f"  {platform}: {username} ({confidence}%)")
 
         print("\n" + "=" * 60)
 
