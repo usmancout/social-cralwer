@@ -26,20 +26,42 @@ class FacebookScraper(BaseScraper):
         return "Facebook"
 
     def _extract_names(self, page: Page):
-        selectors = [
-            'a[href*="profile.php?id"] span[dir="auto"]',
-            'a[href^="/"] span[dir="auto"]'
-        ]
+        """
+        Extract friend names from Facebook's friends page.
+        Uses the specific span class that contains friend names.
+        """
+        try:
+            # Target the exact span class combination that contains friend names
+            name_spans = page.query_selector_all(
+                'span.x193iq5w.xeuugli.x13faqbe.x1vvkbs.x1lkfr7t.x1lbecb7.x1s688f.xzsf02u[dir="auto"]')
 
-        for selector in selectors:
-            try:
-                items = page.query_selector_all(selector)
-                if items:
-                    return [i.inner_text().strip() for i in items if i.inner_text()]
-            except:
-                pass
+            names = []
+            for span in name_spans:
+                name_text = span.inner_text().strip()
 
-        return []
+                if name_text:
+                    # Verify this span is inside a profile link (not navigation)
+                    parent_anchor = span.evaluate_handle('el => el.closest("a")')
+
+                    if parent_anchor:
+                        href = parent_anchor.evaluate('el => el.href')
+
+                        # Profile links contain either:
+                        # - /profile.php?id=NUMBER
+                        # - /username (without query params)
+                        is_profile = (
+                                'profile.php?id=' in href or
+                                (href.count('/') >= 3 and '?' not in href.split('/')[-1])
+                        )
+
+                        if is_profile:
+                            names.append(name_text)
+
+            return names
+
+        except Exception as e:
+            print(f"[Facebook] Error extracting names: {e}")
+            return []
 
     def _collect_friends(self, page: Page, max_items=50):
         print(f"[Facebook] Collecting friends (max {max_items})...")
@@ -79,14 +101,16 @@ class FacebookScraper(BaseScraper):
 
         print(f"[Facebook] Friends collected: {len(friends)}")
 
+        # Facebook friends are mutual connections (bidirectional)
+        # Store them in m_following (since Facebook doesn't distinguish followers/following)
         card = social_model(
             m_weblink=[self.seed_url],
             m_content=f"Friends: {friends}",
             m_content_type=["facebook_friends"],
             m_network="clearnet",
             m_platform="facebook",
-            m_commenters=friends,
-            m_mutual_usernames=friends
+            m_following=friends,  # Facebook friends stored as following
+            m_mutual_usernames=friends  # Also mark as mutual since they're bidirectional
         )
 
         self.data.append(card.model_dump())
