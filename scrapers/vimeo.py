@@ -103,7 +103,6 @@ class vimeo(BaseScraper):
 
         print(following_data)
 
-        # Build model and send to cross-platform mapper
         mutual = list(set(followers_data) & set(following_data))
         
         card = social_model(
@@ -120,5 +119,4 @@ class vimeo(BaseScraper):
         print(card)
         self.data.append(card.model_dump())
         
-        # Send card to cross-platform mapper
         cross_platform_mapper.add_card(card)
