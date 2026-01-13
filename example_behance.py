@@ -6,7 +6,6 @@ from scrapers.behance_scraper import BehanceScraper
 
 def main():
     
-    # Create Behance scraper with username
     scraper = BehanceScraper(username="adobe")
     
     with sync_playwright() as p:
