@@ -55,7 +55,6 @@ class BehanceScraper(BaseScraper):
 
             added = 0
             for n in names:
-                # Stop immediately when we reach max_items
                 if len(collected) >= max_items:
                     break
 
@@ -64,7 +63,6 @@ class BehanceScraper(BaseScraper):
                     added += 1
                     print(f"  → + {n} ({len(collected)}/{max_items})")
 
-            # Break if we've reached the limit
             if len(collected) >= max_items:
                 break
 
@@ -80,14 +78,12 @@ class BehanceScraper(BaseScraper):
 
             time.sleep(2.5)
 
-        # Ensure we return exactly max_items or less
         result = list(collected)[:max_items]
         print(f"[{self.name}] Collected {len(result)} {label}")
         return result
 
     def parse_page(self, page: Page):
 
-        # Collect followers
         followers = self._collect_names(
             page,
             url=self.follower_url,
@@ -95,7 +91,6 @@ class BehanceScraper(BaseScraper):
             max_items=10
         )
 
-        # Collect following
         following = self._collect_names(
             page,
             url=self.following_url,
@@ -103,12 +98,10 @@ class BehanceScraper(BaseScraper):
             max_items=10
         )
 
-        # Find mutual usernames
         mutual_usernames = list(set(followers) & set(following))
 
         print(f"[{self.name}] Mutual connections: {mutual_usernames}")
 
-        # Build model
         card = social_model(
             m_weblink=[self.follower_url, self.following_url],
             m_content=(
@@ -128,5 +121,4 @@ class BehanceScraper(BaseScraper):
         print(card)
         self.data.append(card.model_dump())
 
-        # Send card to cross-platform mapper
         cross_platform_mapper.add_card(card)
