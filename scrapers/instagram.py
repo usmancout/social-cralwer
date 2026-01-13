@@ -14,7 +14,7 @@ class instagram(BaseScraper):
 
     @property
     def base_url(self) -> str:
-        return f"https://www.instagram.com"
+        return f"https://www.instagram.com/{self._username}"
 
     @property
     def seed_url(self) -> str:
@@ -53,7 +53,7 @@ class instagram(BaseScraper):
         print("bio:", bio_text)
 
         page.click("a[href$='/following/']")
-        MAX_FOLLOWING = 100  # 👈 set limit
+        MAX_FOLLOWING = 100
 
         page.wait_for_selector("div[role='dialog'] a.notranslate")
 
@@ -72,7 +72,6 @@ class instagram(BaseScraper):
             current = loc.all_inner_texts()
             following_user.update(current)
 
-            # Stop if no new usernames load
             if len(following_user) == prev_count:
                 break
 
@@ -84,7 +83,7 @@ class instagram(BaseScraper):
 
         page.goto(self.seed_url)
         page.click("a[href$='/followers/']")
-        max_followers = 100  # 👈 set your limit here
+        max_followers = 100
 
         page.wait_for_selector("div[role='dialog'] a.notranslate")
 
@@ -103,7 +102,6 @@ class instagram(BaseScraper):
             current = loc.all_inner_texts()
             followers_user.update(current)
 
-            # Stop if no new users are loading
             if len(followers_user) == prev_count:
                 break
 
@@ -113,7 +111,6 @@ class instagram(BaseScraper):
 
         print(len(followers_user), followers_user)
 
-        # Build model and send to cross-platform mapper
         mutual = list(set(followers_user) & set(following_user))
         
         card = social_model(
@@ -135,6 +132,5 @@ class instagram(BaseScraper):
         print(card)
         self.data.append(card.model_dump())
         
-        # Send card to cross-platform mapper
         cross_platform_mapper.add_card(card)
 
